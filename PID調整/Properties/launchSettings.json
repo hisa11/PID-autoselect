@@ -1,0 +1,10 @@
+﻿{
+  "profiles": {
+    "PID調整 (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "PID調整 (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

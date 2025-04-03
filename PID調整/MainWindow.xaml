@@ -1,0 +1,25 @@
+﻿<Window
+    x:Class="PID調整.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PID調整"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid>
+        <TextBlock Text="PID調整" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="48"/>
+        <NavigationView Header="ヘッダー" SelectionChanged="NavigationView_SelectionChanged">
+            <NavigationView.MenuItems>
+                <!-- 折れ線グラフアイコン -->
+                <NavigationViewItem Content="PIDグラフ" Tag="PID_graph">
+                    <NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE9D2;" FontFamily="Segoe MDL2 Assets"/>
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Icon="Play" Content="PIDシュミレーター" Tag="PID_simulator"/>
+            </NavigationView.MenuItems>
+            <Frame x:Name="contentFrame"/>
+        </NavigationView>
+    </Grid>
+</Window>

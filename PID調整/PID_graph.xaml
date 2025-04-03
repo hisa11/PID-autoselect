@@ -1,0 +1,55 @@
+﻿<Page
+    x:Class="PID調整.PID_graph"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:PID調整"
+    xmlns:d="http://schemas.microsoft.com/expression.blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:lvc="using:LiveChartsCore.SkiaSharpView.WinUI"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+
+    <Grid>
+        <!-- グリッドの行定義 -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- シリアルポート選択エリア -->
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Margin="10">
+            <ComboBox Name="comboBoxPorts" Width="200" Height="30" />
+            <Button Content="更新" Width="80" Height="30" Click="ButtonRefresh_Click" Margin="10,0,0,0"/>
+            <ProgressRing x:Name="progressRing" Width="30" Height="30" Margin="10,0,0,0" Visibility="Collapsed" IsActive="False"/>
+        </StackPanel>
+
+        <!-- グラフと ComboBox を横並びに配置 -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- グラフ -->
+            <lvc:CartesianChart x:Name="myChart" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Margin="0,0,0,5" Grid.Column="0"/>
+
+            <!-- ComboBox と ToggleSwitch をまとめた StackPanel -->
+            <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="10">
+                <ComboBox Name="NumberComboBox" Width="60" Height="30" SelectionChanged="NumberComboBox_SelectionChanged">
+                    <ComboBoxItem Content="1"/>
+                    <ComboBoxItem Content="2"/>
+                    <ComboBoxItem Content="3"/>
+                    <ComboBoxItem Content="4"/>
+                    <ComboBoxItem Content="5"/>
+                    <ComboBoxItem Content="6"/>
+                    <ComboBoxItem Content="7"/>
+                    <ComboBoxItem Content="8"/>
+                </ComboBox>
+
+                <!-- ComboBox の下に配置 -->
+                <StackPanel x:Name="SwitchContainer" Margin="0,10,0,0" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Page>
