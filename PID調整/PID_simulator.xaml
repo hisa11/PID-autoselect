@@ -17,6 +17,7 @@
             <ComboBoxItem Content="3"/>
             <ComboBoxItem Content="4"/>
             <ComboBoxItem Content="5"/>
+            <ComboBoxItem Content="6"/>
         </ComboBox>
 
         <!-- ToggleSwitchを格納するStackPanel -->

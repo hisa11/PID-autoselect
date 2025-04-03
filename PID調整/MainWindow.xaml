@@ -12,6 +12,8 @@
         <NavigationView Header="ヘッダー" SelectionChanged="NavigationView_SelectionChanged">
             <NavigationView.MenuItems>
                 <!-- 折れ線グラフアイコン -->
+                
+                
                 <NavigationViewItem Content="PIDグラフ" Tag="PID_graph">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE9D2;" FontFamily="Segoe MDL2 Assets"/>
