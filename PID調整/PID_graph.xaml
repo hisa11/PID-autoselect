@@ -19,9 +19,20 @@
         <!-- シリアルポート選択エリア -->
         <StackPanel Orientation="Horizontal" VerticalAlignment="Top" Margin="10">
             <ComboBox Name="comboBoxPorts" Width="200" Height="30" />
+            <ComboBox Name="PortsSpeed" SelectedIndex="5" Width="200" Height="30" Margin="10,0,0,0">
+                <ComboBoxItem Content="1200"/>
+                <ComboBoxItem Content="2400"/>
+                <ComboBoxItem Content="4800"/>
+                <ComboBoxItem Content="9600"/>
+                <ComboBoxItem Content="115200"/>
+                <ComboBoxItem Content="230400"/>
+                <ComboBoxItem Content="250000"/>
+            </ComboBox>
             <Button Content="更新" Width="80" Height="30" Click="ButtonRefresh_Click" Margin="10,0,0,0"/>
+            <Button x:Name="btnConnect" Content="接続" Width="80" Height="30" Click="ButtonConnect_Click" Margin="10,0,0,0"/>
             <ProgressRing x:Name="progressRing" Width="30" Height="30" Margin="10,0,0,0" Visibility="Collapsed" IsActive="False"/>
         </StackPanel>
+
 
         <!-- グラフと ComboBox を横並びに配置 -->
         <Grid Grid.Row="1">
