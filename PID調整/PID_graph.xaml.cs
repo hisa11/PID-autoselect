@@ -181,13 +181,13 @@ namespace PID調整
                                 if (targetSeriesList[i].Values is ObservableCollection<ObservablePoint> targetValues)
                                 {
                                     targetValues.Add(new ObservablePoint(x, targetVal));
-                                    if (targetValues.Count > 100) targetValues.RemoveAt(0);
+                                    if (targetValues.Count > 50) targetValues.RemoveAt(0);
                                 }
 
                                 if (currentSeriesList[i].Values is ObservableCollection<ObservablePoint> currentValues)
                                 {
                                     currentValues.Add(new ObservablePoint(x, currentVal));
-                                    if (currentValues.Count > 100) currentValues.RemoveAt(0);
+                                    if (currentValues.Count > 50) currentValues.RemoveAt(0);
                                 }
                             }
                         }

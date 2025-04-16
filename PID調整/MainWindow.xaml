@@ -20,6 +20,7 @@
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Icon="Play" Content="PIDシュミレーター" Tag="PID_simulator"/>
+                <NavigationViewItem Icon="Emoji" Content="PID自動選択" Tag="PID_auto_select"/>
             </NavigationView.MenuItems>
             <Frame x:Name="contentFrame"/>
         </NavigationView>

@@ -29,6 +29,7 @@ namespace PID調整
             var selectedItem = (NavigationViewItem)args.SelectedItem;
             if ((string)selectedItem.Tag == "PID_graph") contentFrame.Navigate(typeof(PID_graph));
             else if ((string)selectedItem.Tag == "PID_simulator") contentFrame.Navigate(typeof(PID_simulator));
+            else if ((string)selectedItem.Tag == "PID_auto_select") contentFrame.Navigate(typeof(PID_auto_select));
         }
     }
 }

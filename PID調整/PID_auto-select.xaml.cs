@@ -21,15 +21,11 @@ namespace PID調整
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
-    public sealed partial class PID_simulator : Page
+    public sealed partial class PID_auto_select : Page
     {
-        public PID_simulator()
+        public PID_auto_select()
         {
             this.InitializeComponent();
-        }
-        private void NumberComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-          
         }
     }
 }
