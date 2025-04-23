@@ -20,7 +20,6 @@ namespace PID調整
 
         private async void StartButton_Click(object sender, RoutedEventArgs e)
         {
-            // 自動チューニング開始
             if (serialPort == null || !serialPort.IsOpen)
             {
                 ShowMessage("エラー", "シリアルポートが接続されていません。");
@@ -33,112 +32,138 @@ namespace PID調整
 
         private async Task AutoTuneAsync()
         {
-            // 候補ゲインのリスト (例)
-            var gainCandidates = new[]
+            // UI から初期ゲインと目標値を取得
+            if (!double.TryParse(TargetTextBox.Text, out double target))
             {
-                (P: 0.5, I: 0.1, D: 0.01),
-                (P: 1.0, I: 0.2, D: 0.02),
-                (P: 1.5, I: 0.3, D: 0.03)
-            };
-
-            double target = double.Parse(TargetTextBox.Text);
-            double bestScore = double.MaxValue;
-            (double P, double I, double D) bestGains = gainCandidates[0];
-
-            foreach (var gains in gainCandidates)
+                ShowMessage("エラー", "目標値の取得に失敗しました。数値を入力してください。");
+                return;
+            }
+            if (!double.TryParse(PTextBox.Text, out double P) ||
+                !double.TryParse(ITextBox.Text, out double I) ||
+                !double.TryParse(DTextBox.Text, out double D))
             {
-                // 1. ゼロリセット
-                await SendAndWaitZeroAsync(0, 0, 0, 0);
-
-                // 2. ゲインと目標値送信
-                await SendSettingsAsync(target, gains.P, gains.I, gains.D);
-
-                // 3. 応答記録
-                var metrics = await RecordResponseMetricsAsync(target);
-
-                // スコアリング (収束時間 + オーバーシュート係数)
-                double score = metrics.ConvergenceTime + metrics.Overshoot;
-                if (score < bestScore)
-                {
-                    bestScore = score;
-                    bestGains = gains;
-                }
-
-                // 次候補へ
-                await Task.Delay(500);
+                ShowMessage("エラー", "PID ゲインの取得に失敗しました。数値を入力してください。");
+                return;
             }
 
-            // ベストゲイン適用
-            await SendAndWaitZeroAsync(0, 0, 0, 0);
-            await SendSettingsAsync(target, bestGains.P, bestGains.I, bestGains.D);
+            // 調整パラメータ
+            const int maxIterations = 10;
+            double overshootTol = 0.1 * target;   // 10% オーバーシュート許容
+            double steadyTol = 0.05 * target;     // 5% 定常誤差許容
 
-            // テキストボックスに反映
+            for (int iter = 0; iter < maxIterations; iter++)
+            {
+                // ゼロリセット
+                await SendAndWaitZeroAsync(0, 0, 0, 0);
+
+                // 現在のゲインでテスト
+                await SendSettingsAsync(target, P, I, D);
+                var metrics = await RecordResponseMetricsAsync(target, steadyTol);
+
+                // 終了判定：3秒間ホールドかつオーバーシュート許容内
+                if (metrics.Stable && metrics.Overshoot <= overshootTol)
+                {
+                    break;
+                }
+
+                // ゲイン調整ロジック
+                if (metrics.Overshoot > overshootTol)
+                {
+                    // オーバーシュート過大 → P を減少し、D を増加
+                    P *= 0.9;
+                    D *= 1.1;
+                }
+                if (!metrics.Stable)
+                {
+                    // 安定せず／定常誤差大 → P, I を増加
+                    P *= 1.05;
+                    I *= 1.1;
+                }
+            }
+
+            // 最終ゲイン適用
+            await SendAndWaitZeroAsync(0, 0, 0, 0);
+            await SendSettingsAsync(target, P, I, D);
+
+            // UI 反映
             _ = DispatcherQueue.TryEnqueue(() =>
             {
-                PTextBox.Text = bestGains.P.ToString("F2");
-                ITextBox.Text = bestGains.I.ToString("F2");
-                DTextBox.Text = bestGains.D.ToString("F2");
+                PTextBox.Text = P.ToString("F2");
+                ITextBox.Text = I.ToString("F2");
+                DTextBox.Text = D.ToString("F2");
             });
 
-            ShowMessage("完了", $"最適ゲイン: P={bestGains.P}, I={bestGains.I}, D={bestGains.D}");
+            ShowMessage("完了", $"最適ゲイン: P={P:F2}, I={I:F2}, D={D:F2}");
         }
 
-        // ゼロ状態になるまで待機
         private async Task SendAndWaitZeroAsync(double target, double p, double i, double d)
         {
             await SendSettingsAsync(target, p, i, d);
-            // currentSpeed が十分小さくなるまで待つ
             while (Math.Abs(currentSpeed) > 0.01)
             {
                 await Task.Delay(50);
             }
         }
 
-        // ゲインと目標値送信
         private async Task SendSettingsAsync(double target, double p, double i, double d)
         {
             string msg = $"{target},{p},{i},{d}";
             serialPort.WriteLine(msg);
-            // OK 応答待ち
             await Task.Delay(100);
         }
 
-        // 応答を記録し、収束時間とオーバーシュートを計算
-        private async Task<(double ConvergenceTime, double Overshoot)> RecordResponseMetricsAsync(double target)
+        /// <summary>
+        /// 目標値に対するレスポンスを計測し、
+        /// - ConvergenceTime: 全体の経過秒数
+        /// - Overshoot: 最大オーバーシュート量
+        /// - Stable: 誤差許容範囲内に入り、3秒間連続ホールドできたか
+        /// を返す
+        /// タイムアウトは5秒
+        /// </summary>
+        private async Task<(double ConvergenceTime, double Overshoot, bool Stable)>
+            RecordResponseMetricsAsync(double target, double steadyTol)
         {
-            var start = DateTime.Now;
+            var overallStart = DateTime.Now;
+            DateTime withinStart = DateTime.MinValue;
             double maxOvershoot = 0;
-            bool converged = false;
-            while (true)
+
+            while ((DateTime.Now - overallStart).TotalSeconds <= 5)
             {
                 double err = currentSpeed - target;
-                // オーバーシュート更新
+                // オーバーシュート計測
                 maxOvershoot = Math.Max(maxOvershoot, Math.Max(0, currentSpeed - target));
 
-                // 収束判定: 誤差が5%以内で、以後安定
-                if (!converged && Math.Abs(err) < 0.05 * target)
+                if (Math.Abs(err) <= steadyTol)
                 {
-                    converged = true;
-                    break;
+                    // 許容内に入った瞬間を記録
+                    if (withinStart == DateTime.MinValue)
+                        withinStart = DateTime.Now;
+
+                    // 3秒間ホールドを確認
+                    if ((DateTime.Now - withinStart).TotalSeconds >= 3)
+                    {
+                        double convTime = (DateTime.Now - overallStart).TotalSeconds;
+                        return (convTime, maxOvershoot, true);
+                    }
                 }
-                if ((DateTime.Now - start).TotalSeconds > 5)
+                else
                 {
-                    // タイムアウト
-                    break;
+                    // 範囲外ならホールドタイマーをリセット
+                    withinStart = DateTime.MinValue;
                 }
+
                 await Task.Delay(20);
             }
-            var convTime = (DateTime.Now - start).TotalSeconds;
-            return (convTime, maxOvershoot);
+
+            double totalTime = (DateTime.Now - overallStart).TotalSeconds;
+            return (totalTime, maxOvershoot, false);
         }
 
         private async void ButtonRefresh_Click(object sender, RoutedEventArgs e)
         {
             progressRing.Visibility = Visibility.Visible;
             progressRing.IsActive = true;
-
             await LoadSerialPortsAsync();
-
             progressRing.IsActive = false;
             progressRing.Visibility = Visibility.Collapsed;
         }
@@ -149,11 +174,8 @@ namespace PID調整
             await Task.Run(() =>
             {
                 foreach (string port in SerialPort.GetPortNames())
-                {
                     portList.Add(port);
-                }
             });
-
             comboBoxPorts.ItemsSource = portList;
             if (portList.Count > 0)
                 comboBoxPorts.SelectedIndex = 0;
@@ -179,19 +201,14 @@ namespace PID調整
                 ShowMessage("エラー", "シリアルポートが選択されていません。");
                 return;
             }
-
             if (!int.TryParse(((ComboBoxItem)PortsSpeed.SelectedItem)?.Content.ToString(), out int baudRate))
             {
                 ShowMessage("エラー", "ボーレートの取得に失敗しました。");
                 return;
             }
-
             try
             {
-                serialPort = new SerialPort(portName, baudRate)
-                {
-                    NewLine = "\r\n"
-                };
+                serialPort = new SerialPort(portName, baudRate) { NewLine = "\r\n" };
                 serialPort.DataReceived += SerialPort_DataReceived;
                 serialPort.Open();
                 btnConnect.Content = "切断";
@@ -223,7 +240,6 @@ namespace PID調整
             }
         }
 
-        // MCUからの速度受信
         private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             try

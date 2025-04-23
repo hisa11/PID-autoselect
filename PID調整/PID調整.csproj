@@ -13,7 +13,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="PID_auto-select.xaml" />
     <None Remove="PID_graph.xaml" />
     <None Remove="PID_simulator.xaml" />
   </ItemGroup>
@@ -48,7 +47,7 @@
     <PackageReference Include="System.Management" Version="9.0.3" />
   </ItemGroup>
   <ItemGroup>
-    <Page Update="PID_auto-select.xaml">
+    <Page Update="PID_auto_select.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
